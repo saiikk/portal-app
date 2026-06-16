@@ -1,0 +1,20 @@
+# Backend (Laravel)
+apps/backend/vendor/
+apps/backend/node_modules/
+apps/backend/.env
+apps/backend/storage/*.key
+apps/backend/storage/framework/cache/*
+apps/backend/storage/framework/sessions/*
+apps/backend/storage/framework/views/*
+apps/backend/storage/logs/*
+apps/backend/bootstrap/cache/*
+
+# Frontend (Expo)
+apps/frontend/node_modules/
+apps/frontend/.expo/
+apps/frontend/dist/
+apps/frontend/.env
+
+# OS / Editor
+.DS_Store
+.vscode/
