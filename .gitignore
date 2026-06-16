@@ -1,13 +1,15 @@
 # Backend (Laravel)
-apps/backend/vendor/
-apps/backend/node_modules/
 apps/backend/.env
-apps/backend/storage/*.key
-apps/backend/storage/framework/cache/*
-apps/backend/storage/framework/sessions/*
-apps/backend/storage/framework/views/*
-apps/backend/storage/logs/*
-apps/backend/bootstrap/cache/*
+apps/backend/src/vendor/
+apps/backend/src/node_modules/
+apps/backend/src/.env
+apps/backend/src/storage/*.key
+apps/backend/src/storage/framework/cache/*
+apps/backend/src/storage/framework/sessions/*
+apps/backend/src/storage/framework/views/*
+apps/backend/src/storage/logs/*
+apps/backend/src/bootstrap/cache/*
+apps/backend/src/database/*.sqlite
 
 # Frontend (Expo)
 apps/frontend/node_modules/
