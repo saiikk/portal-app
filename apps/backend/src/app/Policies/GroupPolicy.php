@@ -13,7 +13,7 @@ class GroupPolicy
      */
     public function viewAny(User $user): bool
     {
-        return false;
+        return true;
     }
 
     /**
@@ -21,7 +21,7 @@ class GroupPolicy
      */
     public function view(User $user, Group $group): bool
     {
-        return false;
+        return $group->members()->where('user_id', $user->id)->exists();
     }
 
     /**
@@ -37,7 +37,7 @@ class GroupPolicy
      */
     public function update(User $user, Group $group): bool
     {
-        return false;
+        return $user->role === 'admin';
     }
 
     /**
@@ -45,7 +45,7 @@ class GroupPolicy
      */
     public function delete(User $user, Group $group): bool
     {
-        return false;
+        return $user->role === 'admin';
     }
 
     /**
