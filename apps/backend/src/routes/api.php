@@ -15,6 +15,8 @@ Route::middleware('auth:sanctum')->group(function () {
 
     Route::get('/groups', [GroupController::class, 'index']);
     Route::post('/groups', [GroupController::class, 'store'])->middleware('can:create,App\Models\Group');
+    Route::get('/groups/{group}/members', [GroupController::class, 'members']);
+    Route::patch('/groups/{group}/members/{user}', [GroupController::class, 'updateMemberRole']);
     Route::get('/groups/{group}/messages', [MessageController::class, 'index']);
     Route::post('/groups/{group}/messages', [MessageController::class, 'store']);
 
