@@ -14,4 +14,9 @@ export const profileApi = {
 
   updateProfile: (payload: UpdateProfilePayload) =>
     client.put<User>('/profile', payload).then((r) => r.data),
+
+  uploadAvatar: (formData: FormData) =>
+    client.post<User>('/profile/avatar', formData, {
+      headers: { 'Content-Type': 'multipart/form-data' },
+    }).then((r) => r.data),
 };

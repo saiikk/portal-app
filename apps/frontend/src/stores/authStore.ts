@@ -11,6 +11,7 @@ interface AuthStore {
   login: (credentials: LoginCredentials) => Promise<void>;
   logout: () => Promise<void>;
   initialize: () => Promise<void>;
+  setUser: (user: User) => void;
 }
 
 export const useAuthStore = create<AuthStore>((set) => ({
@@ -26,6 +27,8 @@ export const useAuthStore = create<AuthStore>((set) => ({
     await authService.logout();
     set({ user: null });
   },
+
+  setUser: (user) => set({ user }),
 
   initialize: async () => {
     const token = await authService.getStoredToken();
