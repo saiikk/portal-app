@@ -1,9 +1,11 @@
 import { useMutation } from '@tanstack/react-query';
 import * as ImagePicker from 'expo-image-picker';
-import { useState } from 'react';
+import { useRef, useState } from 'react';
 import {
   ActivityIndicator,
   Alert,
+  Animated,
+  Image,
   Modal,
   ScrollView,
   Text,
@@ -15,6 +17,7 @@ import {
 import { profileApi } from '@/api/profile';
 import Avatar from '@/components/Avatar';
 import { useAuthStore } from '@/stores/authStore';
+import { resolveMediaUrl } from '@/utils/resolveUrl';
 import { s } from '@/utils/scale';
 
 export default function ProfileScreen() {
@@ -25,6 +28,19 @@ export default function ProfileScreen() {
   const [avatarUri, setAvatarUri] = useState<string | null>(null);
   const [isEditing, setIsEditing] = useState(false);
   const [showPasswordModal, setShowPasswordModal] = useState(false);
+  const [showAvatarPreview, setShowAvatarPreview] = useState(false);
+  const scaleAnim = useRef(new Animated.Value(0.6)).current;
+
+  const openAvatarPreview = () => {
+    setShowAvatarPreview(true);
+    Animated.spring(scaleAnim, { toValue: 1, useNativeDriver: true, bounciness: 6 }).start();
+  };
+
+  const closeAvatarPreview = () => {
+    Animated.timing(scaleAnim, { toValue: 0.6, duration: 150, useNativeDriver: true }).start(() =>
+      setShowAvatarPreview(false)
+    );
+  };
 
   const { mutate: saveProfile, isPending } = useMutation({
     mutationFn: () => profileApi.updateProfile({ name: name.trim(), email: email.trim() }),
@@ -41,6 +57,7 @@ export default function ProfileScreen() {
   const { mutate: uploadAvatar, isPending: isUploading } = useMutation({
     mutationFn: (formData: FormData) => profileApi.uploadAvatar(formData),
     onSuccess: (updated) => {
+      console.log('[avatar] icon_url:', updated.icon_url);
       setUser(updated);
       setAvatarUri(null);
     },
@@ -89,23 +106,38 @@ export default function ProfileScreen() {
     <ScrollView style={{ flex: 1, backgroundColor: '#fff' }} contentContainerStyle={{ padding: s(24) }}>
       {/* アバター */}
       <View style={{ alignItems: 'center', marginBottom: s(32) }}>
-        <TouchableOpacity onPress={pickImage} activeOpacity={0.8} disabled={isUploading}>
-          <View>
-            <Avatar uri={avatarUri ?? user?.icon_url} size={s(96)} />
-            {isUploading && (
-              <View style={{
-                position: 'absolute', width: s(96), height: s(96), borderRadius: s(48),
-                backgroundColor: 'rgba(0,0,0,0.4)', justifyContent: 'center', alignItems: 'center',
-              }}>
-                <ActivityIndicator color="#fff" />
-              </View>
-            )}
-          </View>
+        <TouchableOpacity onPress={openAvatarPreview} activeOpacity={0.85}>
+          <Avatar uri={avatarUri ?? user?.icon_url} size={s(96)} />
+          {isUploading && (
+            <View style={{
+              position: 'absolute', width: s(96), height: s(96), borderRadius: s(48),
+              backgroundColor: 'rgba(0,0,0,0.4)', justifyContent: 'center', alignItems: 'center',
+            }}>
+              <ActivityIndicator color="#fff" />
+            </View>
+          )}
         </TouchableOpacity>
         <TouchableOpacity onPress={pickImage} style={{ marginTop: s(8) }} disabled={isUploading}>
           <Text style={{ fontSize: s(12), color: '#FF8700' }}>写真を変更</Text>
         </TouchableOpacity>
       </View>
+
+      {/* アバタープレビューモーダル */}
+      <Modal visible={showAvatarPreview} transparent animationType="fade">
+        <TouchableOpacity
+          style={{ flex: 1, backgroundColor: 'rgba(0,0,0,0.85)', justifyContent: 'center', alignItems: 'center' }}
+          activeOpacity={1}
+          onPress={closeAvatarPreview}
+        >
+          <Animated.View style={{ transform: [{ scale: scaleAnim }] }}>
+            <Image
+              source={resolveMediaUrl(avatarUri ?? user?.icon_url) ? { uri: resolveMediaUrl(avatarUri ?? user?.icon_url)! } : require('../../assets/images/default-avatar.png')}
+              style={{ width: s(300), height: s(300), borderRadius: s(8) }}
+              resizeMode="cover"
+            />
+          </Animated.View>
+        </TouchableOpacity>
+      </Modal>
 
       {/* 名前 */}
       <Text style={{ fontSize: s(13), color: '#666', marginBottom: s(6) }}>名前</Text>

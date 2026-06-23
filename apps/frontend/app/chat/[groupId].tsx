@@ -7,6 +7,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { groupsApi, type GroupMember } from '@/api/groups';
 import Avatar from '@/components/Avatar';
 import ChatView from '@/components/ChatView';
+import { useAuthStore } from '@/stores/authStore';
 import { s } from '@/utils/scale';
 
 const MAX_PREVIEW = 3;
@@ -16,6 +17,7 @@ export default function ChatScreen() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
   const queryClient = useQueryClient();
+  const { user } = useAuthStore();
   const [showMembers, setShowMembers] = useState(false);
 
   const { data: members = [] } = useQuery({
@@ -55,6 +57,9 @@ export default function ChatScreen() {
       ]
     );
   };
+
+  const currentUserRole = members.find((m) => m.id === user?.id)?.role;
+  const isOwner = currentUserRole === 'owner';
 
   const preview = members.slice(0, MAX_PREVIEW);
   const extra = members.length - MAX_PREVIEW;
@@ -138,19 +143,25 @@ export default function ChatScreen() {
                       {item.type === 'new_graduate' ? '新卒' : '社員'}
                     </Text>
                   </View>
-                  <TouchableOpacity
-                    onPress={() => handleRoleToggle(item)}
-                    style={{
-                      paddingHorizontal: s(10),
-                      paddingVertical: s(4),
-                      borderRadius: s(12),
-                      backgroundColor: item.role === 'owner' ? '#FF8700' : '#f0f0f0',
-                    }}
-                  >
-                    <Text style={{ fontSize: s(11), fontWeight: '600', color: item.role === 'owner' ? '#fff' : '#666' }}>
+                  {isOwner ? (
+                    <TouchableOpacity
+                      onPress={() => handleRoleToggle(item)}
+                      style={{
+                        paddingHorizontal: s(10),
+                        paddingVertical: s(4),
+                        borderRadius: s(12),
+                        backgroundColor: item.role === 'owner' ? '#FF8700' : '#f0f0f0',
+                      }}
+                    >
+                      <Text style={{ fontSize: s(11), fontWeight: '600', color: item.role === 'owner' ? '#fff' : '#666' }}>
+                        {item.role === 'owner' ? 'オーナー' : 'メンバー'}
+                      </Text>
+                    </TouchableOpacity>
+                  ) : (
+                    <Text style={{ fontSize: s(11), color: '#888' }}>
                       {item.role === 'owner' ? 'オーナー' : 'メンバー'}
                     </Text>
-                  </TouchableOpacity>
+                  )}
                 </View>
               )}
             />
