@@ -14,6 +14,8 @@ class Group extends Model
 {
     use HasUuids;
 
+    protected $table = 'groups';
+
     public function creator(): BelongsTo
     {
         return $this->belongsTo(User::class, 'created_by');

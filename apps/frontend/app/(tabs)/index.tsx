@@ -3,15 +3,16 @@ import { useRouter } from 'expo-router';
 import { useState } from 'react';
 import {
   ActivityIndicator,
+  FlatList,
   Modal,
   Text,
   TextInput,
   TouchableOpacity,
   View,
-  FlatList,
 } from 'react-native';
 
 import { groupsApi } from '@/api/groups';
+import { usersApi, type UserSummary } from '@/api/users';
 import ChatView from '@/components/ChatView';
 import { useAuthStore } from '@/stores/authStore';
 import type { Group } from '@/types';
@@ -20,22 +21,48 @@ export default function TopScreen() {
   const { user } = useAuthStore();
   const router = useRouter();
   const queryClient = useQueryClient();
+
   const [showModal, setShowModal] = useState(false);
   const [groupName, setGroupName] = useState('');
+  const [search, setSearch] = useState('');
+  const [selectedIds, setSelectedIds] = useState<string[]>([]);
 
   const { data: groups = [], isLoading } = useQuery({
     queryKey: ['groups'],
     queryFn: groupsApi.getGroups,
   });
 
+  const { data: allUsers = [] } = useQuery({
+    queryKey: ['users'],
+    queryFn: usersApi.getAll,
+    enabled: showModal,
+  });
+
   const { mutate: createGroup, isPending } = useMutation({
-    mutationFn: (name: string) => groupsApi.createGroup(name),
+    mutationFn: () => groupsApi.createGroup(groupName.trim(), selectedIds),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['groups'] });
-      setShowModal(false);
-      setGroupName('');
+      closeModal();
     },
   });
+
+  const closeModal = () => {
+    setShowModal(false);
+    setGroupName('');
+    setSearch('');
+    setSelectedIds([]);
+  };
+
+  const toggleUser = (u: UserSummary) => {
+    if (u.has_group) return;
+    setSelectedIds((prev) =>
+      prev.includes(u.id) ? prev.filter((x) => x !== u.id) : [...prev, u.id]
+    );
+  };
+
+  const filteredUsers = allUsers.filter((u: UserSummary) =>
+    u.name.toLowerCase().includes(search.toLowerCase())
+  );
 
   if (isLoading) {
     return (
@@ -104,25 +131,11 @@ export default function TopScreen() {
 
       {/* グループ作成モーダル */}
       <Modal visible={showModal} transparent animationType="fade">
-        <View
-          style={{
-            flex: 1,
-            backgroundColor: 'rgba(0,0,0,0.4)',
-            justifyContent: 'center',
-            alignItems: 'center',
-          }}
-        >
-          <View
-            style={{
-              backgroundColor: '#fff',
-              borderRadius: 12,
-              padding: 24,
-              width: '80%',
-            }}
-          >
-            <Text style={{ fontSize: 16, fontWeight: '600', marginBottom: 16 }}>
-              グループ作成
-            </Text>
+        <View style={{ flex: 1, backgroundColor: 'rgba(0,0,0,0.4)', justifyContent: 'center', alignItems: 'center' }}>
+          <View style={{ backgroundColor: '#fff', borderRadius: 12, padding: 20, width: '90%', maxHeight: '80%' }}>
+            <Text style={{ fontSize: 16, fontWeight: '600', marginBottom: 12 }}>グループ作成</Text>
+
+            {/* グループ名 */}
             <TextInput
               style={{
                 borderWidth: 1,
@@ -131,25 +144,96 @@ export default function TopScreen() {
                 paddingHorizontal: 12,
                 paddingVertical: 10,
                 fontSize: 14,
-                marginBottom: 16,
+                marginBottom: 12,
               }}
               placeholder="グループ名"
               value={groupName}
               onChangeText={setGroupName}
               autoFocus
             />
+
+            {/* ユーザー検索 */}
+            <TextInput
+              style={{
+                borderWidth: 1,
+                borderColor: '#e0e0e0',
+                borderRadius: 8,
+                paddingHorizontal: 12,
+                paddingVertical: 8,
+                fontSize: 14,
+                marginBottom: 8,
+              }}
+              placeholder="ユーザー名で検索"
+              value={search}
+              onChangeText={setSearch}
+            />
+
+            {/* ユーザーリスト */}
+            <FlatList
+              data={filteredUsers}
+              keyExtractor={(item: UserSummary) => item.id}
+              style={{ maxHeight: 200, marginBottom: 12 }}
+              renderItem={({ item }: { item: UserSummary }) => {
+                const isSelected = selectedIds.includes(item.id);
+                const isDisabled = item.has_group;
+                return (
+                  <TouchableOpacity
+                    onPress={() => toggleUser(item)}
+                    activeOpacity={isDisabled ? 1 : 0.7}
+                    style={{
+                      flexDirection: 'row',
+                      alignItems: 'center',
+                      paddingVertical: 10,
+                      borderBottomWidth: 1,
+                      borderBottomColor: '#f0f0f0',
+                      opacity: isDisabled ? 0.4 : 1,
+                    }}
+                  >
+                    <View
+                      style={{
+                        width: 20,
+                        height: 20,
+                        borderRadius: 4,
+                        borderWidth: 2,
+                        borderColor: isSelected ? '#FF8700' : '#ccc',
+                        backgroundColor: isSelected ? '#FF8700' : '#fff',
+                        marginRight: 10,
+                        justifyContent: 'center',
+                        alignItems: 'center',
+                      }}
+                    >
+                      {isSelected && <Text style={{ color: '#fff', fontSize: 12, fontWeight: '700' }}>✓</Text>}
+                    </View>
+                    <View style={{ flex: 1 }}>
+                      <Text style={{ fontSize: 14, color: '#000' }}>{item.name}</Text>
+                      <Text style={{ fontSize: 11, color: '#888' }}>
+                        {item.type === 'new_graduate' ? '新卒' : '社員'}
+                        {isDisabled ? '　グループ参加済み' : ''}
+                      </Text>
+                    </View>
+                  </TouchableOpacity>
+                );
+              }}
+              ListEmptyComponent={
+                <Text style={{ color: '#aaa', textAlign: 'center', paddingVertical: 12 }}>
+                  {search ? '該当するユーザーがいません' : 'ユーザーを読み込み中...'}
+                </Text>
+              }
+            />
+
+            {selectedIds.length > 0 && (
+              <Text style={{ fontSize: 12, color: '#FF8700', marginBottom: 8 }}>
+                {selectedIds.length}人を選択中
+              </Text>
+            )}
+
+            {/* ボタン */}
             <View style={{ flexDirection: 'row', justifyContent: 'flex-end', gap: 8 }}>
-              <TouchableOpacity
-                onPress={() => { setShowModal(false); setGroupName(''); }}
-                style={{
-                  paddingHorizontal: 16,
-                  paddingVertical: 10,
-                }}
-              >
+              <TouchableOpacity onPress={closeModal} style={{ paddingHorizontal: 16, paddingVertical: 10 }}>
                 <Text style={{ color: '#666', fontSize: 14 }}>キャンセル</Text>
               </TouchableOpacity>
               <TouchableOpacity
-                onPress={() => { if (groupName.trim()) createGroup(groupName.trim()); }}
+                onPress={() => createGroup()}
                 disabled={!groupName.trim() || isPending}
                 style={{
                   backgroundColor: groupName.trim() ? '#FF8700' : '#ccc',

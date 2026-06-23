@@ -18,9 +18,11 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('/groups/{group}/messages', [MessageController::class, 'index']);
     Route::post('/groups/{group}/messages', [MessageController::class, 'store']);
 
+    Route::get('/users', [UserController::class, 'index']);
     Route::get('/users/new-graduates', [UserController::class, 'newGraduates']);
     Route::get('/users/employees', [UserController::class, 'employees']);
 
     Route::get('/profile', [ProfileController::class, 'show']);
     Route::put('/profile', [ProfileController::class, 'update']);
+    Route::post('/profile/avatar', [ProfileController::class, 'uploadAvatar']);
 });
