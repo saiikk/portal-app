@@ -1,6 +1,8 @@
 import { useRouter, useSegments } from 'expo-router';
-import { ScrollView, Text, TouchableOpacity, View } from 'react-native';
+import { Text, TouchableOpacity, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+
+import { s } from '@/utils/scale';
 
 const TABS = [
   { label: 'トップ画面', segment: 'index', route: '/(tabs)/' },
@@ -25,33 +27,31 @@ export default function TopTabBar() {
         borderBottomColor: '#e0e0e0',
       }}
     >
-      <ScrollView
-        horizontal
-        showsHorizontalScrollIndicator={false}
-        contentContainerStyle={{
+      <View
+        style={{
           flexDirection: 'row',
           alignItems: 'center',
-          paddingHorizontal: 8,
-          height: 44,
+          paddingHorizontal: s(8),
+          height: s(44),
         }}
       >
         {/* ハンバーガーアイコン */}
         <View
           style={{
-            width: 28,
-            height: 20,
+            width: s(28),
+            height: s(20),
             backgroundColor: '#FF8700',
-            borderRadius: 2,
+            borderRadius: s(2),
             justifyContent: 'space-evenly',
             alignItems: 'center',
-            paddingVertical: 3,
-            marginRight: 12,
+            paddingVertical: s(3),
+            marginRight: s(12),
           }}
         >
           {[0, 1, 2].map((i) => (
             <View
               key={i}
-              style={{ width: 16, height: 2, backgroundColor: '#fff', borderRadius: 1 }}
+              style={{ width: s(16), height: 2, backgroundColor: '#fff', borderRadius: 1 }}
             />
           ))}
         </View>
@@ -63,26 +63,27 @@ export default function TopTabBar() {
               key={tab.segment}
               onPress={() => router.navigate(tab.route)}
               style={{
-                paddingHorizontal: 10,
-                paddingVertical: 8,
+                flex: 1,
+                alignItems: 'center',
+                paddingVertical: s(8),
                 borderBottomWidth: 2,
                 borderBottomColor: isActive ? '#FF8700' : 'transparent',
-                marginRight: 4,
               }}
             >
               <Text
                 style={{
-                  fontSize: 12,
+                  fontSize: s(11),
                   color: isActive ? '#FF8700' : '#333',
                   fontWeight: isActive ? '600' : '400',
                 }}
+                numberOfLines={1}
               >
                 {tab.label}
               </Text>
             </TouchableOpacity>
           );
         })}
-      </ScrollView>
+      </View>
     </View>
   );
 }

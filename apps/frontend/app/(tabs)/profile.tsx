@@ -1,9 +1,11 @@
 import { useMutation } from '@tanstack/react-query';
 import * as ImagePicker from 'expo-image-picker';
-import { useState } from 'react';
+import { useRef, useState } from 'react';
 import {
   ActivityIndicator,
   Alert,
+  Animated,
+  Image,
   Modal,
   ScrollView,
   Text,
@@ -15,6 +17,8 @@ import {
 import { profileApi } from '@/api/profile';
 import Avatar from '@/components/Avatar';
 import { useAuthStore } from '@/stores/authStore';
+import { resolveMediaUrl } from '@/utils/resolveUrl';
+import { s } from '@/utils/scale';
 
 export default function ProfileScreen() {
   const { user, logout, setUser } = useAuthStore();
@@ -24,6 +28,19 @@ export default function ProfileScreen() {
   const [avatarUri, setAvatarUri] = useState<string | null>(null);
   const [isEditing, setIsEditing] = useState(false);
   const [showPasswordModal, setShowPasswordModal] = useState(false);
+  const [showAvatarPreview, setShowAvatarPreview] = useState(false);
+  const scaleAnim = useRef(new Animated.Value(0.6)).current;
+
+  const openAvatarPreview = () => {
+    setShowAvatarPreview(true);
+    Animated.spring(scaleAnim, { toValue: 1, useNativeDriver: true, bounciness: 6 }).start();
+  };
+
+  const closeAvatarPreview = () => {
+    Animated.timing(scaleAnim, { toValue: 0.6, duration: 150, useNativeDriver: true }).start(() =>
+      setShowAvatarPreview(false)
+    );
+  };
 
   const { mutate: saveProfile, isPending } = useMutation({
     mutationFn: () => profileApi.updateProfile({ name: name.trim(), email: email.trim() }),
@@ -40,6 +57,7 @@ export default function ProfileScreen() {
   const { mutate: uploadAvatar, isPending: isUploading } = useMutation({
     mutationFn: (formData: FormData) => profileApi.uploadAvatar(formData),
     onSuccess: (updated) => {
+      console.log('[avatar] icon_url:', updated.icon_url);
       setUser(updated);
       setAvatarUri(null);
     },
@@ -85,38 +103,53 @@ export default function ProfileScreen() {
   };
 
   return (
-    <ScrollView style={{ flex: 1, backgroundColor: '#fff' }} contentContainerStyle={{ padding: 24 }}>
+    <ScrollView style={{ flex: 1, backgroundColor: '#fff' }} contentContainerStyle={{ padding: s(24) }}>
       {/* アバター */}
-      <View style={{ alignItems: 'center', marginBottom: 32 }}>
-        <TouchableOpacity onPress={pickImage} activeOpacity={0.8} disabled={isUploading}>
-          <View>
-            <Avatar uri={avatarUri ?? user?.icon_url} size={96} />
-            {isUploading && (
-              <View style={{
-                position: 'absolute', width: 96, height: 96, borderRadius: 48,
-                backgroundColor: 'rgba(0,0,0,0.4)', justifyContent: 'center', alignItems: 'center',
-              }}>
-                <ActivityIndicator color="#fff" />
-              </View>
-            )}
-          </View>
+      <View style={{ alignItems: 'center', marginBottom: s(32) }}>
+        <TouchableOpacity onPress={openAvatarPreview} activeOpacity={0.85}>
+          <Avatar uri={avatarUri ?? user?.icon_url} size={s(96)} />
+          {isUploading && (
+            <View style={{
+              position: 'absolute', width: s(96), height: s(96), borderRadius: s(48),
+              backgroundColor: 'rgba(0,0,0,0.4)', justifyContent: 'center', alignItems: 'center',
+            }}>
+              <ActivityIndicator color="#fff" />
+            </View>
+          )}
         </TouchableOpacity>
-        <TouchableOpacity onPress={pickImage} style={{ marginTop: 8 }} disabled={isUploading}>
-          <Text style={{ fontSize: 12, color: '#FF8700' }}>写真を変更</Text>
+        <TouchableOpacity onPress={pickImage} style={{ marginTop: s(8) }} disabled={isUploading}>
+          <Text style={{ fontSize: s(12), color: '#FF8700' }}>写真を変更</Text>
         </TouchableOpacity>
       </View>
 
+      {/* アバタープレビューモーダル */}
+      <Modal visible={showAvatarPreview} transparent animationType="fade">
+        <TouchableOpacity
+          style={{ flex: 1, backgroundColor: 'rgba(0,0,0,0.85)', justifyContent: 'center', alignItems: 'center' }}
+          activeOpacity={1}
+          onPress={closeAvatarPreview}
+        >
+          <Animated.View style={{ transform: [{ scale: scaleAnim }] }}>
+            <Image
+              source={resolveMediaUrl(avatarUri ?? user?.icon_url) ? { uri: resolveMediaUrl(avatarUri ?? user?.icon_url)! } : require('../../assets/images/default-avatar.png')}
+              style={{ width: s(300), height: s(300), borderRadius: s(8) }}
+              resizeMode="cover"
+            />
+          </Animated.View>
+        </TouchableOpacity>
+      </Modal>
+
       {/* 名前 */}
-      <Text style={{ fontSize: 13, color: '#666', marginBottom: 6 }}>名前</Text>
+      <Text style={{ fontSize: s(13), color: '#666', marginBottom: s(6) }}>名前</Text>
       <TextInput
         style={{
           borderWidth: 1,
           borderColor: '#e0e0e0',
-          borderRadius: 8,
-          paddingHorizontal: 14,
-          paddingVertical: 11,
-          fontSize: 15,
-          marginBottom: 20,
+          borderRadius: s(8),
+          paddingHorizontal: s(14),
+          paddingVertical: s(11),
+          fontSize: s(15),
+          marginBottom: s(20),
           backgroundColor: isEditing ? '#fff' : '#fafafa',
           color: isEditing ? '#000' : '#555',
         }}
@@ -128,16 +161,16 @@ export default function ProfileScreen() {
       />
 
       {/* メールアドレス */}
-      <Text style={{ fontSize: 13, color: '#666', marginBottom: 6 }}>メールアドレス</Text>
+      <Text style={{ fontSize: s(13), color: '#666', marginBottom: s(6) }}>メールアドレス</Text>
       <TextInput
         style={{
           borderWidth: 1,
           borderColor: '#e0e0e0',
-          borderRadius: 8,
-          paddingHorizontal: 14,
-          paddingVertical: 11,
-          fontSize: 15,
-          marginBottom: 20,
+          borderRadius: s(8),
+          paddingHorizontal: s(14),
+          paddingVertical: s(11),
+          fontSize: s(15),
+          marginBottom: s(20),
           backgroundColor: isEditing ? '#fff' : '#fafafa',
           color: isEditing ? '#000' : '#555',
         }}
@@ -150,41 +183,41 @@ export default function ProfileScreen() {
       />
 
       {/* 種別（読み取り専用） */}
-      <Text style={{ fontSize: 13, color: '#666', marginBottom: 6 }}>種別</Text>
+      <Text style={{ fontSize: s(13), color: '#666', marginBottom: s(6) }}>種別</Text>
       <View
         style={{
           borderWidth: 1,
           borderColor: '#f0f0f0',
-          borderRadius: 8,
-          paddingHorizontal: 14,
-          paddingVertical: 11,
-          marginBottom: 28,
+          borderRadius: s(8),
+          paddingHorizontal: s(14),
+          paddingVertical: s(11),
+          marginBottom: s(28),
           backgroundColor: '#fafafa',
         }}
       >
-        <Text style={{ fontSize: 15, color: '#999' }}>
+        <Text style={{ fontSize: s(15), color: '#999' }}>
           {user?.type === 'new_graduate' ? '新卒' : '社員'}
         </Text>
       </View>
 
       {/* 編集 / 保存 + パスワードリセット */}
-      <View style={{ flexDirection: 'row', gap: 10, marginBottom: 32 }}>
+      <View style={{ flexDirection: 'row', gap: s(10), marginBottom: s(32) }}>
         <TouchableOpacity
           onPress={() => isEditing ? saveProfile() : setIsEditing(true)}
           disabled={isPending}
-          style={{ flex: 1, backgroundColor: '#FF8700', borderRadius: 8, paddingVertical: 13, alignItems: 'center' }}
+          style={{ flex: 1, backgroundColor: '#FF8700', borderRadius: s(8), paddingVertical: s(13), alignItems: 'center' }}
           activeOpacity={0.8}
         >
-          <Text style={{ color: '#fff', fontSize: 15, fontWeight: '600' }}>
+          <Text style={{ color: '#fff', fontSize: s(15), fontWeight: '600' }}>
             {isPending ? '保存中...' : isEditing ? '保存' : '編集'}
           </Text>
         </TouchableOpacity>
         <TouchableOpacity
           onPress={() => setShowPasswordModal(true)}
-          style={{ flex: 1, borderWidth: 1, borderColor: '#FF8700', borderRadius: 8, paddingVertical: 13, alignItems: 'center' }}
+          style={{ flex: 1, borderWidth: 1, borderColor: '#FF8700', borderRadius: s(8), paddingVertical: s(13), alignItems: 'center' }}
           activeOpacity={0.8}
         >
-          <Text style={{ color: '#FF8700', fontSize: 15, fontWeight: '600' }}>パスワードリセット</Text>
+          <Text style={{ color: '#FF8700', fontSize: s(15), fontWeight: '600' }}>パスワードリセット</Text>
         </TouchableOpacity>
       </View>
 
@@ -193,34 +226,34 @@ export default function ProfileScreen() {
         onPress={handleLogout}
         style={{
           backgroundColor: '#f5f5f5',
-          borderRadius: 8,
-          paddingVertical: 13,
+          borderRadius: s(8),
+          paddingVertical: s(13),
           alignItems: 'center',
         }}
         activeOpacity={0.8}
       >
-        <Text style={{ color: '#666', fontSize: 15, fontWeight: '600' }}>ログアウト</Text>
+        <Text style={{ color: '#666', fontSize: s(15), fontWeight: '600' }}>ログアウト</Text>
       </TouchableOpacity>
 
       {/* パスワードリセット送信済みモーダル */}
       <Modal visible={showPasswordModal} transparent animationType="fade">
         <View style={{ flex: 1, backgroundColor: 'rgba(0,0,0,0.4)', justifyContent: 'center', alignItems: 'center' }}>
-          <View style={{ backgroundColor: '#fff', borderRadius: 16, padding: 28, width: '80%', alignItems: 'center' }}>
-            <Text style={{ fontSize: 32, marginBottom: 12 }}>✉️</Text>
-            <Text style={{ fontSize: 16, fontWeight: '600', marginBottom: 8 }}>メールを送信しました</Text>
-            <Text style={{ fontSize: 13, color: '#666', textAlign: 'center', marginBottom: 24, lineHeight: 20 }}>
+          <View style={{ backgroundColor: '#fff', borderRadius: s(16), padding: s(28), width: '80%', alignItems: 'center' }}>
+            <Text style={{ fontSize: s(32), marginBottom: s(12) }}>✉️</Text>
+            <Text style={{ fontSize: s(16), fontWeight: '600', marginBottom: s(8) }}>メールを送信しました</Text>
+            <Text style={{ fontSize: s(13), color: '#666', textAlign: 'center', marginBottom: s(24), lineHeight: s(20) }}>
               パスワードリセット用のメールを{'\n'}{user?.email} に送信しました。
             </Text>
             <TouchableOpacity
               onPress={() => setShowPasswordModal(false)}
               style={{
                 backgroundColor: '#FF8700',
-                borderRadius: 8,
-                paddingHorizontal: 32,
-                paddingVertical: 11,
+                borderRadius: s(8),
+                paddingHorizontal: s(32),
+                paddingVertical: s(11),
               }}
             >
-              <Text style={{ color: '#fff', fontWeight: '600', fontSize: 14 }}>OK</Text>
+              <Text style={{ color: '#fff', fontWeight: '600', fontSize: s(14) }}>OK</Text>
             </TouchableOpacity>
           </View>
         </View>

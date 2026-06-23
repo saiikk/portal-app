@@ -2,80 +2,151 @@
 
 新卒ポータルアプリのモバイルフロントエンド。
 
-> 現状ステータス：プロジェクト未作成（Phase4未着手）。本READMEはセットアップ予定の構成を記載。
-
-## 対象プラットフォーム
-
-- iOS（最初の対応対象）
-- Android（将来対応）
-
 ## 技術スタック
 
-- Expo / React Native
-- TypeScript
+| 分類 | ライブラリ |
+|---|---|
+| フレームワーク | Expo SDK 56 / React Native |
+| 言語 | TypeScript |
+| ルーティング | expo-router 56 |
+| 状態管理 | Zustand |
+| サーバーステート | TanStack Query v5（10秒ポーリング） |
+| APIクライアント | axios |
+| フォーム検証 | react-hook-form + zod |
+| ストレージ | AsyncStorage |
+| 画像選択 | expo-image-picker |
 
-## 採用ライブラリ（予定）
+## 動作環境
 
-- expo-router（画面ルーティング）
-- axios（APIクライアント）
-- zustand（状態管理）
-- @tanstack/react-query（サーバーステート管理）
-- react-hook-form + zod（入力検証）
-- nativewind（スタイリング）
-- @react-native-async-storage/async-storage（トークン保存）
-- expo-notifications（Push通知）
+- iOS（実装済み）
+- Android（未対応）
 
-## アーキテクチャ
+---
 
-- MVVM
-- Repository Pattern（API通信）
-- Service Layer
-
-## ディレクトリ構成（予定）
-
-```text
-src/
-├── api
-├── components
-├── screens
-├── hooks
-├── stores
-├── types
-├── constants
-├── utils
-├── services
-└── validations
-```
-
-## セットアップ（Phase4実施時）
+## 開発環境セットアップ
 
 ```bash
 cd apps/frontend
-npx create-expo-app . -t expo-template-blank-typescript
-
-npx expo install expo-router
-npm install axios zustand @tanstack/react-query react-hook-form zod nativewind
-npx expo install @react-native-async-storage/async-storage expo-notifications
+npm install
+npx expo start --ios   # iOS シミュレーター起動
 ```
 
-`.env`にバックエンドAPIのベースURL（`apps/backend`参照）を設定する。
+**API URL の設定**（`src/constants/api.ts`）:
 
-## 想定機能
+```ts
+// シミュレーター
+export const API_BASE_URL = 'http://localhost:8000/api';
 
-### 認証
+// 実機テスト時は Mac のローカル IP に変更
+export const API_BASE_URL = 'http://192.168.x.x:8000/api';
+```
 
-- ログイン / ログアウト
-- 新規登録なし（アカウントはadminが事前にDBへ投入する運用）
+---
 
-### 画面
+## 実機インストール手順（iOS）
 
-- トップページ：ユーザーグループでのチャット（メッセージ送受信）
-- 新卒紹介ページ：ユーザー画像＋ネーム＋一言（500文字制限）のカード表示
-- 社員紹介ページ：新卒紹介と同様＋配属先・ロール表示
-- プロフィール：アイコン・ネーム・Eメール・パスワード（アイコンはadmin提供画像の表示のみ、アップロード機能なし）
+### 前提条件
 
-### 通知
+- Mac に Xcode（または Xcode Beta）がインストール済み
+- 無料の Apple ID があれば可（Push通知は有料アカウント必要）
+- iPhone を USB ケーブルで Mac に接続し「信頼」済み
 
-- チャットへの新規メッセージ送信時、送信者以外の参加者へPush通知（expo-notifications）
+### 手順
 
-詳細な実装フェーズはルートの`implementation-roadmap`（Phase4以降）を参照。
+**1. Mac のローカル IP を確認**
+
+```bash
+ipconfig getifaddr en0
+```
+
+**2. API URL を Mac の IP に変更**
+
+`src/constants/api.ts`:
+
+```ts
+export const API_BASE_URL = 'http://192.168.x.x:8000/api';
+```
+
+**3. iOS ネイティブプロジェクトを生成**
+
+```bash
+cd apps/frontend
+npx expo prebuild --platform ios
+```
+
+`ios/` フォルダが生成される。
+
+**4. Push Notifications entitlement を削除**（無料 Apple ID の場合）
+
+```bash
+/usr/libexec/PlistBuddy -c "Delete :aps-environment" ios/frontend/frontend.entitlements
+```
+
+**5. Xcode でプロジェクトを開く**
+
+```bash
+open ios/frontend.xcworkspace
+```
+
+**6. Xcode で Signing を設定**
+
+1. 左ペインで `frontend` プロジェクトを選択
+2. `Signing & Capabilities` タブを開く
+3. `Automatically manage signing` にチェック
+4. `Team` に自分の Apple ID を選択
+
+**7. 実機でビルド・起動**
+
+- iPhone を選択した状態で `⌘R`（または Product → Run）
+
+### 注意事項
+
+| 項目 | 内容 |
+|---|---|
+| 有効期限 | 無料 Apple ID でのインストールは 7 日間有効（期限後は再ビルドが必要） |
+| API 接続 | Mac と iPhone が同じ Wi-Fi に繋がっている必要がある |
+| バックエンド | `apps/backend/` の Docker が Mac 上で起動していること |
+| `ios/` フォルダ | `.gitignore` 対象のため、環境ごとに `prebuild` が必要 |
+
+### 再インストール時（2 回目以降）
+
+`ios/` フォルダが既にある場合はステップ 3 をスキップ可。ただしライブラリ追加後は再度 prebuild が必要。
+
+```bash
+# ios/ が古い場合はクリーンビルド
+rm -rf ios/
+npx expo prebuild --platform ios
+/usr/libexec/PlistBuddy -c "Delete :aps-environment" ios/frontend/frontend.entitlements
+# → Xcode で ⌘R
+```
+
+---
+
+## ディレクトリ構成
+
+```text
+apps/frontend/
+├── app/
+│   ├── _layout.tsx          # ルートレイアウト（認証ガード）
+│   ├── (auth)/
+│   │   └── login.tsx        # ログイン画面
+│   ├── (tabs)/
+│   │   ├── _layout.tsx      # タブレイアウト（TopTabBar）
+│   │   ├── index.tsx        # トップ（general: チャット / admin: グループ一覧）
+│   │   ├── members.tsx      # 新卒紹介
+│   │   ├── employees.tsx    # 社員紹介
+│   │   └── profile.tsx      # プロフィール
+│   └── chat/
+│       └── [groupId].tsx    # チャット画面（admin用）
+├── src/
+│   ├── api/                 # axios クライアント・各エンドポイント
+│   ├── components/          # 共通コンポーネント（Avatar, ChatView, TopTabBar）
+│   ├── constants/           # API URL 等の定数
+│   ├── stores/              # Zustand ストア（認証状態）
+│   ├── types/               # 型定義
+│   ├── validations/         # Zod スキーマ
+│   └── services/            # 認証サービス
+└── assets/
+    └── images/
+        └── default-avatar.png
+```

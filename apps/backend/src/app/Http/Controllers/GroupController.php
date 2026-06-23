@@ -16,6 +16,47 @@ class GroupController extends Controller
         return response()->json($groups);
     }
 
+    public function members(Group $group)
+    {
+        $members = $group->members()
+            ->select('users.id', 'users.name', 'users.icon_url', 'users.type')
+            ->get()
+            ->map(fn($m) => [
+                'id'       => $m->id,
+                'name'     => $m->name,
+                'icon_url' => $m->icon_url,
+                'type'     => $m->type,
+                'role'     => $m->pivot->role,
+            ]);
+
+        return response()->json($members);
+    }
+
+    public function updateMemberRole(Request $request, Group $group, User $user)
+    {
+        $validated = $request->validate([
+            'role' => ['required', 'in:owner,member'],
+        ]);
+
+        if ($validated['role'] === 'member') {
+            $ownerCount = $group->members()->wherePivot('role', 'owner')->count();
+            $isLastOwner = $group->members()
+                ->wherePivot('role', 'owner')
+                ->where('users.id', $user->id)
+                ->exists();
+
+            if ($ownerCount <= 1 && $isLastOwner) {
+                throw ValidationException::withMessages([
+                    'role' => ['グループには最低1人のオーナーが必要です。'],
+                ]);
+            }
+        }
+
+        $group->members()->updateExistingPivot($user->id, ['role' => $validated['role']]);
+
+        return response()->json(['message' => 'ok']);
+    }
+
     public function store(Request $request)
     {
         $validated = $request->validate([

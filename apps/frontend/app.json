@@ -11,10 +11,11 @@
       "supportsTablet": true,
       "infoPlist": {
         "NSAppTransportSecurity": {
-          "NSAllowsLocalNetworking": true
+          "NSAllowsArbitraryLoads": true
         }
       },
-      "bundleIdentifier": "com.anonymous.frontend"
+      "bundleIdentifier": "com.jlee.portalapp",
+      "appleTeamId": "NTA3FA6DCH"
     },
     "android": {
       "adaptiveIcon": {

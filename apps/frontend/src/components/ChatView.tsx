@@ -12,8 +12,10 @@ import {
 } from 'react-native';
 
 import { messagesApi } from '@/api/messages';
+import Avatar from '@/components/Avatar';
 import { useAuthStore } from '@/stores/authStore';
 import type { Message } from '@/types';
+import { s } from '@/utils/scale';
 
 export default function ChatView({ groupId }: { groupId: string }) {
   const { user } = useAuthStore();
@@ -53,14 +55,14 @@ export default function ChatView({ groupId }: { groupId: string }) {
     <KeyboardAvoidingView
       style={{ flex: 1 }}
       behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-      keyboardVerticalOffset={90}
+      keyboardVerticalOffset={s(90)}
     >
       <FlatList
         ref={listRef}
         data={[...messages].reverse()}
         keyExtractor={(item) => String(item.id)}
         inverted
-        contentContainerStyle={{ padding: 12 }}
+        contentContainerStyle={{ padding: s(12) }}
         renderItem={({ item }) => {
           const isOwn = item.user_id === user?.id;
           return (
@@ -68,26 +70,32 @@ export default function ChatView({ groupId }: { groupId: string }) {
               style={{
                 flexDirection: 'row',
                 justifyContent: isOwn ? 'flex-end' : 'flex-start',
-                marginBottom: 8,
+                alignItems: 'flex-end',
+                marginBottom: s(8),
               }}
             >
+              {!isOwn && (
+                <View style={{ marginRight: s(6) }}>
+                  <Avatar uri={item.user?.icon_url} size={s(32)} />
+                </View>
+              )}
               <View style={{ maxWidth: '75%' }}>
                 {!isOwn && (
-                  <Text style={{ fontSize: 10, color: '#888', marginBottom: 2, marginLeft: 4 }}>
+                  <Text style={{ fontSize: s(10), color: '#888', marginBottom: s(2), marginLeft: s(4) }}>
                     {item.user?.name}
                   </Text>
                 )}
                 <View
                   style={{
                     backgroundColor: isOwn ? '#FF8700' : '#f0f0f0',
-                    borderRadius: 16,
-                    borderBottomRightRadius: isOwn ? 4 : 16,
-                    borderBottomLeftRadius: isOwn ? 16 : 4,
-                    paddingHorizontal: 12,
-                    paddingVertical: 8,
+                    borderRadius: s(16),
+                    borderBottomRightRadius: isOwn ? s(4) : s(16),
+                    borderBottomLeftRadius: isOwn ? s(16) : s(4),
+                    paddingHorizontal: s(12),
+                    paddingVertical: s(8),
                   }}
                 >
-                  <Text style={{ color: isOwn ? '#fff' : '#000', fontSize: 14 }}>
+                  <Text style={{ color: isOwn ? '#fff' : '#000', fontSize: s(14) }}>
                     {item.body}
                   </Text>
                 </View>
@@ -96,7 +104,7 @@ export default function ChatView({ groupId }: { groupId: string }) {
           );
         }}
         ListEmptyComponent={
-          <View style={{ alignItems: 'center', marginTop: 40 }}>
+          <View style={{ alignItems: 'center', marginTop: s(40) }}>
             <Text style={{ color: '#aaa' }}>メッセージはまだありません</Text>
           </View>
         }
@@ -107,7 +115,7 @@ export default function ChatView({ groupId }: { groupId: string }) {
         style={{
           flexDirection: 'row',
           alignItems: 'flex-end',
-          padding: 8,
+          padding: s(8),
           borderTopWidth: 1,
           borderTopColor: '#e0e0e0',
           backgroundColor: '#fff',
@@ -118,12 +126,12 @@ export default function ChatView({ groupId }: { groupId: string }) {
             flex: 1,
             borderWidth: 1,
             borderColor: '#e0e0e0',
-            borderRadius: 20,
-            paddingHorizontal: 14,
-            paddingVertical: 8,
-            fontSize: 14,
-            maxHeight: 100,
-            marginRight: 8,
+            borderRadius: s(20),
+            paddingHorizontal: s(14),
+            paddingVertical: s(8),
+            fontSize: s(14),
+            maxHeight: s(100),
+            marginRight: s(8),
           }}
           value={input}
           onChangeText={setInput}
@@ -137,12 +145,12 @@ export default function ChatView({ groupId }: { groupId: string }) {
           disabled={!input.trim() || isPending}
           style={{
             backgroundColor: input.trim() ? '#FF8700' : '#ccc',
-            borderRadius: 20,
-            paddingHorizontal: 16,
-            paddingVertical: 10,
+            borderRadius: s(20),
+            paddingHorizontal: s(16),
+            paddingVertical: s(10),
           }}
         >
-          <Text style={{ color: '#fff', fontWeight: '600', fontSize: 14 }}>送信</Text>
+          <Text style={{ color: '#fff', fontWeight: '600', fontSize: s(14) }}>送信</Text>
         </TouchableOpacity>
       </View>
     </KeyboardAvoidingView>
