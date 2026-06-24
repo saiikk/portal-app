@@ -7,8 +7,7 @@ import { AUTH_TOKEN_KEY } from '@/constants/storage';
 const client = axios.create({
   baseURL: API_BASE_URL,
   headers: {
-    'Accept': 'application/json',
-    'Content-Type': 'application/json',
+    Accept: 'application/json',
   },
 });
 
