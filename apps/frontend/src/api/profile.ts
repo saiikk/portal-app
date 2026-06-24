@@ -1,19 +1,27 @@
-import type { User } from "@/types";
-import client from "./client";
+import { supabase } from '@/lib/supabase';
+import type { User } from '@/types';
 
 export interface UpdateProfilePayload {
   name?: string;
   email?: string;
-  password?: string;
-  password_confirmation?: string;
 }
 
 export const profileApi = {
-  getProfile: () => client.get<User>("/profile").then((r) => r.data),
+  updateProfile: async (payload: UpdateProfilePayload): Promise<User> => {
+    const { data: { user: authUser } } = await supabase.auth.getUser();
+    if (!authUser) throw new Error('Not authenticated');
+    const { data, error } = await supabase
+      .from('users')
+      .update(payload)
+      .eq('id', authUser.id)
+      .select()
+      .single();
+    if (error) throw error;
+    return data;
+  },
 
-  updateProfile: (payload: UpdateProfilePayload) =>
-    client.put<User>("/profile", payload).then((r) => r.data),
-
-  uploadAvatar: (formData: FormData) =>
-    client.post<User>("/profile/avatar", formData).then((r) => r.data),
+  // Session 6 で Supabase Storage に移行予定
+  uploadAvatar: async (_formData: FormData): Promise<User> => {
+    throw new Error('uploadAvatar は Session 6 で実装');
+  },
 };
