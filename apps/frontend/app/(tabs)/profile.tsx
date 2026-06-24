@@ -110,12 +110,15 @@ export default function ProfileScreen() {
     }
   };
 
-  const handleLogout = async () => {
-    const ok = window.confirm("ログアウトしますか？");
-
-    if (!ok) return;
-
-    await logout();
+  const handleLogout = () => {
+    if (Platform.OS === 'web') {
+      if (window.confirm('ログアウトしますか？')) logout();
+      return;
+    }
+    Alert.alert('ログアウト', 'ログアウトしますか？', [
+      { text: 'キャンセル', style: 'cancel' },
+      { text: 'ログアウト', style: 'destructive', onPress: () => logout() },
+    ]);
   };
 
   return (
