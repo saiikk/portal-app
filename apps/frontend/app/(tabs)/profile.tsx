@@ -18,7 +18,6 @@ import {
 import { profileApi } from "@/api/profile";
 import Avatar from "@/components/Avatar";
 import { useAuthStore } from "@/stores/authStore";
-import { resolveMediaUrl } from "@/utils/resolveUrl";
 import { s } from "@/utils/scale";
 
 export default function ProfileScreen() {
@@ -63,9 +62,9 @@ export default function ProfileScreen() {
   });
 
   const { mutate: uploadAvatar, isPending: isUploading } = useMutation({
-    mutationFn: (formData: FormData) => profileApi.uploadAvatar(formData),
+    mutationFn: (asset: { uri: string; mimeType?: string; file?: File }) =>
+      profileApi.uploadAvatar(asset),
     onSuccess: (updated) => {
-      console.log("[avatar] icon_url:", updated.icon_url);
       setUser(updated);
       setAvatarUri(null);
     },
@@ -93,20 +92,7 @@ export default function ProfileScreen() {
     if (!result.canceled && result.assets[0]) {
       const asset = result.assets[0];
       setAvatarUri(asset.uri);
-      const ext = asset.uri.split(".").pop() ?? "jpg";
-      const formData = new FormData();
-      if (Platform.OS === "web") {
-        if (asset.file) {
-          formData.append("avatar", asset.file, asset.file.name);
-        }
-      } else {
-        formData.append("avatar", {
-          uri: asset.uri,
-          name: `avatar.${ext}`,
-          type: asset.mimeType ?? "image/jpeg",
-        } as any);
-      }
-      uploadAvatar(formData);
+      uploadAvatar({ uri: asset.uri, mimeType: asset.mimeType, file: asset.file });
     }
   };
 
@@ -170,8 +156,8 @@ export default function ProfileScreen() {
           <Animated.View style={{ transform: [{ scale: scaleAnim }] }}>
             <Image
               source={
-                resolveMediaUrl(avatarUri ?? user?.icon_url)
-                  ? { uri: resolveMediaUrl(avatarUri ?? user?.icon_url)! }
+                (avatarUri ?? user?.icon_url)
+                  ? { uri: avatarUri ?? user?.icon_url! }
                   : require("../../assets/images/default-avatar.png")
               }
               style={{ width: s(300), height: s(300), borderRadius: s(8) }}
