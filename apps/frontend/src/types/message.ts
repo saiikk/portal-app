@@ -1,12 +1,10 @@
 import type { User } from './user';
 
 export interface Message {
-  id: number;
+  id: string;
   group_id: string;
   user_id: string;
   body: string;
-  deleted_at: string | null;
   created_at: string;
-  updated_at: string;
-  user: User;
+  user?: Pick<User, 'id' | 'name' | 'icon_url'>;
 }
