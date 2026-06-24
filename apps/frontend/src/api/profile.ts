@@ -1,5 +1,5 @@
-import type { User } from '@/types';
-import client from './client';
+import type { User } from "@/types";
+import client from "./client";
 
 export interface UpdateProfilePayload {
   name?: string;
@@ -9,14 +9,11 @@ export interface UpdateProfilePayload {
 }
 
 export const profileApi = {
-  getProfile: () =>
-    client.get<User>('/profile').then((r) => r.data),
+  getProfile: () => client.get<User>("/profile").then((r) => r.data),
 
   updateProfile: (payload: UpdateProfilePayload) =>
-    client.put<User>('/profile', payload).then((r) => r.data),
+    client.put<User>("/profile", payload).then((r) => r.data),
 
   uploadAvatar: (formData: FormData) =>
-    client.post<User>('/profile/avatar', formData, {
-      headers: { 'Content-Type': 'multipart/form-data' },
-    }).then((r) => r.data),
+    client.post<User>("/profile/avatar", formData).then((r) => r.data),
 };
