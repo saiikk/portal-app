@@ -1,5 +1,5 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import {
   ActivityIndicator,
   FlatList,
@@ -13,6 +13,7 @@ import {
 
 import { messagesApi } from '@/api/messages';
 import Avatar from '@/components/Avatar';
+import { supabase } from '@/lib/supabase';
 import { useAuthStore } from '@/stores/authStore';
 import type { Message } from '@/types';
 import { s } from '@/utils/scale';
@@ -26,15 +27,27 @@ export default function ChatView({ groupId }: { groupId: string }) {
   const { data: messages = [], isLoading } = useQuery({
     queryKey: ['messages', groupId],
     queryFn: () => messagesApi.getMessages(groupId),
-    refetchInterval: 10000,
   });
+
+  // Supabase Realtime でメッセージを即時受信
+  useEffect(() => {
+    const channel = supabase
+      .channel(`messages:${groupId}`)
+      .on(
+        'postgres_changes',
+        { event: 'INSERT', schema: 'public', table: 'messages', filter: `group_id=eq.${groupId}` },
+        () => {
+          queryClient.invalidateQueries({ queryKey: ['messages', groupId] });
+        }
+      )
+      .subscribe();
+
+    return () => { supabase.removeChannel(channel); };
+  }, [groupId, queryClient]);
 
   const { mutate: sendMessage, isPending } = useMutation({
     mutationFn: (body: string) => messagesApi.sendMessage(groupId, body),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['messages', groupId] });
-      setInput('');
-    },
+    onSuccess: () => setInput(''),
   });
 
   const handleSend = () => {
@@ -110,7 +123,6 @@ export default function ChatView({ groupId }: { groupId: string }) {
         }
       />
 
-      {/* 入力エリア */}
       <View
         style={{
           flexDirection: 'row',
