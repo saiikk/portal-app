@@ -11,7 +11,9 @@ const TABS = [
   { label: 'プロフィール', segment: 'profile', route: '/(tabs)/profile' },
 ] as const;
 
-export default function TopTabBar() {
+type Props = { onMenuPress?: () => void };
+
+export default function TopTabBar({ onMenuPress }: Props) {
   const router = useRouter();
   const segments = useSegments();
   const insets = useSafeAreaInsets();
@@ -36,7 +38,8 @@ export default function TopTabBar() {
         }}
       >
         {/* ハンバーガーアイコン */}
-        <View
+        <TouchableOpacity
+          onPress={onMenuPress}
           style={{
             width: s(28),
             height: s(20),
@@ -47,6 +50,7 @@ export default function TopTabBar() {
             paddingVertical: s(3),
             marginRight: s(12),
           }}
+          activeOpacity={0.7}
         >
           {[0, 1, 2].map((i) => (
             <View
@@ -54,7 +58,7 @@ export default function TopTabBar() {
               style={{ width: s(16), height: 2, backgroundColor: '#fff', borderRadius: 1 }}
             />
           ))}
-        </View>
+        </TouchableOpacity>
 
         {TABS.map((tab) => {
           const isActive = currentSegment === tab.segment;
