@@ -52,6 +52,13 @@ export const groupsApi = {
     if (error) throw error;
   },
 
+  addMember: async (groupId: string, userId: string): Promise<void> => {
+    const { error } = await supabase
+      .from('group_user')
+      .insert({ group_id: groupId, user_id: userId, role: 'member' });
+    if (error) throw error;
+  },
+
   kickMember: async (groupId: string, userId: string, groupName: string): Promise<void> => {
     // SECURITY DEFINER RPC でオーナー確認 + RLS を迂回して削除
     const { error: kickError } = await supabase.rpc('kick_member', {
