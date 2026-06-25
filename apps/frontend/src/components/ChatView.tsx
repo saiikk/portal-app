@@ -47,7 +47,13 @@ export default function ChatView({ groupId }: { groupId: string }) {
 
   const { mutate: sendMessage, isPending } = useMutation({
     mutationFn: (body: string) => messagesApi.sendMessage(groupId, body),
-    onSuccess: () => setInput(''),
+    onSuccess: (newMessage) => {
+      setInput('');
+      queryClient.setQueryData<Message[]>(['messages', groupId], (prev = []) => [
+        ...prev,
+        newMessage,
+      ]);
+    },
   });
 
   const handleSend = () => {

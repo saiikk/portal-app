@@ -38,9 +38,15 @@ export const groupsApi = {
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) throw new Error('Not authenticated');
 
+    // groups.id は DB に DEFAULT がないためクライアントで生成する
+    const id = 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, (c) => {
+      const r = (Math.random() * 16) | 0;
+      return (c === 'x' ? r : (r & 0x3) | 0x8).toString(16);
+    });
+
     const { data: group, error: groupError } = await supabase
       .from('groups')
-      .insert({ name, created_by: user.id })
+      .insert({ id, name, created_by: user.id })
       .select()
       .single();
     if (groupError) throw groupError;
