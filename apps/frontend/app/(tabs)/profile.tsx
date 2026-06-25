@@ -181,7 +181,7 @@ export default function ProfileScreen() {
           fontSize: s(15),
           marginBottom: s(20),
           backgroundColor: isEditing ? "#fff" : "#fafafa",
-          color: isEditing ? "#000" : "#555",
+          color: "#555",
         }}
         value={name}
         onChangeText={setName}
@@ -204,7 +204,7 @@ export default function ProfileScreen() {
           fontSize: s(15),
           marginBottom: s(20),
           backgroundColor: isEditing ? "#fff" : "#fafafa",
-          color: isEditing ? "#000" : "#555",
+          color: "#555",
         }}
         value={email}
         onChangeText={setEmail}

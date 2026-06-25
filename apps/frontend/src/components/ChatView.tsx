@@ -144,6 +144,7 @@ export default function ChatView({ groupId }: { groupId: string }) {
             fontSize: s(14),
             maxHeight: s(100),
             marginRight: s(8),
+            color: '#555',
           }}
           value={input}
           onChangeText={setInput}

@@ -78,7 +78,7 @@ export default function LoginScreen() {
                 borderBottomWidth: 1,
                 borderBottomColor: '#e0e0e0',
                 fontSize: s(13),
-                color: '#000',
+                color: '#555',
                 marginBottom: errors.username ? s(4) : s(16),
               }}
               onBlur={onBlur}
@@ -106,7 +106,7 @@ export default function LoginScreen() {
                 borderBottomWidth: 1,
                 borderBottomColor: '#e0e0e0',
                 fontSize: s(13),
-                color: '#000',
+                color: '#555',
                 marginBottom: errors.password ? s(4) : s(20),
               }}
               onBlur={onBlur}

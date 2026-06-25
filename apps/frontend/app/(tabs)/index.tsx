@@ -143,6 +143,7 @@ export default function TopScreen() {
                 paddingVertical: s(10),
                 fontSize: s(14),
                 marginBottom: s(12),
+                color: '#555',
               }}
               placeholder="グループ名"
               value={groupName}
@@ -159,6 +160,7 @@ export default function TopScreen() {
                 paddingVertical: s(8),
                 fontSize: s(14),
                 marginBottom: s(8),
+                color: '#555',
               }}
               placeholder="ユーザー名で検索"
               value={search}
