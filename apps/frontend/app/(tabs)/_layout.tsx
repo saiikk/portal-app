@@ -1,6 +1,16 @@
 import { Slot, useRouter, useSegments } from 'expo-router';
 import { useEffect, useRef, useState } from 'react';
-import { Animated, Dimensions, Modal, Platform, Pressable, Text, TouchableOpacity, View } from 'react-native';
+import {
+  Animated,
+  Dimensions,
+  Modal,
+  Platform,
+  Pressable,
+  Text,
+  TouchableOpacity,
+  View,
+  useWindowDimensions,
+} from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { notificationsApi, type Notification } from '@/api/notifications';
@@ -8,7 +18,7 @@ import TopTabBar from '@/components/TopTabBar';
 import { useAuthStore } from '@/stores/authStore';
 import { s } from '@/utils/scale';
 
-const SIDEBAR_WIDTH = Dimensions.get('window').width * 0.72;
+const SIDEBAR_WIDTH = Dimensions.get('window').width * (2 / 3);
 
 const MENU_ITEMS = [
   { label: 'お知らせ', icon: '🔔' },
@@ -26,11 +36,17 @@ const WEB_TABS = [
 ] as const;
 
 function WebTabLayout() {
+  const { width } = useWindowDimensions();
   const insets = useSafeAreaInsets();
   const router = useRouter();
   const segments = useSegments();
   const { logout } = useAuthStore();
   const currentSegment = (segments as string[])[1] ?? 'index';
+
+  // 768px 未満のスマホ幅はモバイルレイアウトを使用
+  if (width < 768) {
+    return <MobileTabLayout />;
+  }
 
   const handleLogout = () => {
     if (typeof window !== 'undefined' && window.confirm('ログアウトしますか？')) logout();

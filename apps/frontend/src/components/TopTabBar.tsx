@@ -76,11 +76,13 @@ export default function TopTabBar({ onMenuPress }: Props) {
             >
               <Text
                 style={{
-                  fontSize: s(11),
+                  fontSize: s(10),
                   color: isActive ? '#FF8700' : '#333',
                   fontWeight: isActive ? '600' : '400',
                 }}
                 numberOfLines={1}
+                adjustsFontSizeToFit
+                minimumFontScale={0.75}
               >
                 {tab.label}
               </Text>

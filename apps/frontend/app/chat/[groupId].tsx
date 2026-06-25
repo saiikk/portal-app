@@ -5,7 +5,7 @@ import { Alert, FlatList, Modal, Platform, Text, TextInput, TouchableOpacity, Vi
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { groupsApi, type GroupMember } from '@/api/groups';
-import { usersApi, type UserSummary } from '@/api/users';
+import { usersApi, type UserBasic } from '@/api/users';
 import Avatar from '@/components/Avatar';
 import ChatView from '@/components/ChatView';
 import { useAuthStore } from '@/stores/authStore';
@@ -36,8 +36,8 @@ export default function ChatScreen() {
   });
 
   const { data: allUsers = [] } = useQuery({
-    queryKey: ['users-all'],
-    queryFn: () => usersApi.getAll(),
+    queryKey: ['users-basic'],
+    queryFn: () => usersApi.getAllBasic(),
     enabled: showMembers && modalView === 'add',
   });
 
@@ -51,16 +51,13 @@ export default function ChatScreen() {
 
   const currentUserRole = members.find((m) => m.id === user?.id)?.role;
   const isOwner = currentUserRole === 'owner';
-  const isNewGraduate = user?.type === 'new_graduate';
 
-  // 未参加ユーザー（検索フィルタ付き）
-  // new_graduate は1グループ制限のため has_group=true なら除外
-  const nonMembers = useMemo<UserSummary[]>(() => {
+  // このグループに未参加のユーザー（検索フィルタ付き）
+  const nonMembers = useMemo<UserBasic[]>(() => {
     const memberIds = new Set(members.map((m) => m.id));
     return allUsers.filter(
       (u) =>
         !memberIds.has(u.id) &&
-        !(u.type === 'new_graduate' && u.has_group) &&
         (searchText === '' || u.name.includes(searchText))
     );
   }, [allUsers, members, searchText]);
@@ -142,7 +139,7 @@ export default function ChatScreen() {
     );
   };
 
-  const handleAddMember = (u: UserSummary) => {
+  const handleAddMember = (u: UserBasic) => {
     const doAdd = () => addMember(u.id);
     if (Platform.OS === 'web') {
       if (typeof window !== 'undefined' && window.confirm(`${u.name} をグループに追加しますか？`)) {
@@ -179,11 +176,9 @@ export default function ChatScreen() {
     <View style={{ flex: 1, backgroundColor: '#fff', paddingTop: insets.top }}>
       {/* ヘッダー */}
       <View style={{ flexDirection: 'row', alignItems: 'center', height: s(44), borderBottomWidth: 1, borderBottomColor: '#e0e0e0', paddingHorizontal: s(12) }}>
-        {!isNewGraduate && (
-          <TouchableOpacity onPress={() => router.back()} style={{ marginRight: s(12) }}>
-            <Text style={{ fontSize: s(16), color: '#FF8700' }}>{'＜ 戻る'}</Text>
-          </TouchableOpacity>
-        )}
+        <TouchableOpacity onPress={() => router.replace('/(tabs)/')} style={{ marginRight: s(12) }}>
+          <Text style={{ fontSize: s(16), color: '#FF8700' }}>{'＜ 戻る'}</Text>
+        </TouchableOpacity>
         <Text style={{ fontSize: s(16), fontWeight: '600', flex: 1 }}>
           {groupData?.name ?? 'チャット'}
         </Text>
@@ -312,8 +307,8 @@ export default function ChatScreen() {
                 ) : (
                   <FlatList
                     data={nonMembers}
-                    keyExtractor={(item: UserSummary) => item.id}
-                    renderItem={({ item }: { item: UserSummary }) => (
+                    keyExtractor={(item: UserBasic) => item.id}
+                    renderItem={({ item }: { item: UserBasic }) => (
                       <View style={{ flexDirection: 'row', alignItems: 'center', paddingVertical: s(10), borderBottomWidth: 1, borderBottomColor: '#f0f0f0' }}>
                         <Avatar uri={item.icon_url} size={s(40)} />
                         <View style={{ flex: 1, marginLeft: s(12) }}>

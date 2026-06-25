@@ -235,12 +235,11 @@ export default function ProfileScreen() {
       </View>
 
       {/* 編集 / 保存 + パスワードリセット */}
-      <View style={{ flexDirection: "row", gap: s(10), marginBottom: s(32) }}>
+      <View style={{ gap: s(10), marginBottom: s(32) }}>
         <TouchableOpacity
           onPress={() => (isEditing ? saveProfile() : setIsEditing(true))}
           disabled={isPending}
           style={{
-            flex: 1,
             backgroundColor: "#FF8700",
             borderRadius: s(8),
             paddingVertical: s(13),
@@ -255,7 +254,6 @@ export default function ProfileScreen() {
         <TouchableOpacity
           onPress={() => setShowPasswordModal(true)}
           style={{
-            flex: 1,
             borderWidth: 1,
             borderColor: "#FF8700",
             borderRadius: s(8),
@@ -264,9 +262,7 @@ export default function ProfileScreen() {
           }}
           activeOpacity={0.8}
         >
-          <Text
-            style={{ color: "#FF8700", fontSize: s(15), fontWeight: "600" }}
-          >
+          <Text style={{ color: "#FF8700", fontSize: s(15), fontWeight: "600" }}>
             パスワードリセット
           </Text>
         </TouchableOpacity>

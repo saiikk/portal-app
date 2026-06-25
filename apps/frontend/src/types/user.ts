@@ -1,5 +1,5 @@
 export type UserType = 'new_graduate' | 'employee';
-export type UserRole = 'general' | 'admin';
+export type UserRole = 'member' | 'admin';
 
 export interface User {
   id: string;

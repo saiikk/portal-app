@@ -1,6 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useRouter } from 'expo-router';
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import {
   ActivityIndicator,
   FlatList,
@@ -12,7 +12,7 @@ import {
 } from 'react-native';
 
 import { groupsApi } from '@/api/groups';
-import { usersApi, type UserSummary } from '@/api/users';
+import { usersApi, type UserBasic } from '@/api/users';
 import { useAuthStore } from '@/stores/authStore';
 import type { Group } from '@/types';
 import { s } from '@/utils/scale';
@@ -23,7 +23,6 @@ export default function TopScreen() {
   const queryClient = useQueryClient();
 
   const isAdmin = user?.role === 'admin';
-  const isNewGraduate = user?.type === 'new_graduate';
 
   const [showModal, setShowModal] = useState(false);
   const [groupName, setGroupName] = useState('');
@@ -36,8 +35,8 @@ export default function TopScreen() {
   });
 
   const { data: allUsers = [] } = useQuery({
-    queryKey: ['users'],
-    queryFn: usersApi.getAll,
+    queryKey: ['users-basic'],
+    queryFn: usersApi.getAllBasic,
     enabled: showModal,
   });
 
@@ -56,44 +55,27 @@ export default function TopScreen() {
     setSelectedIds([]);
   };
 
-  // new_graduate のみ1グループ制限
-  const isUserDisabled = (u: UserSummary) => u.type === 'new_graduate' && u.has_group;
-
-  const toggleUser = (u: UserSummary) => {
-    if (isUserDisabled(u)) return;
+  const toggleUser = (u: UserBasic) => {
     setSelectedIds((prev) =>
       prev.includes(u.id) ? prev.filter((x) => x !== u.id) : [...prev, u.id]
     );
   };
 
-  const filteredUsers = allUsers.filter((u: UserSummary) =>
+  const filteredUsers = allUsers.filter((u: UserBasic) =>
     u.name.toLowerCase().includes(search.toLowerCase())
   );
 
-  // new_graduate はグループがあればチャット画面へリダイレクト（ヘッダー付き）
-  const newGradGroupId = !isLoading && isNewGraduate ? groups[0]?.id : undefined;
-  useEffect(() => {
-    if (newGradGroupId) {
-      router.replace(`/chat/${newGradGroupId}` as any);
-    }
-  }, [newGradGroupId]);
-
-  if (isLoading || isNewGraduate) {
+  if (isLoading) {
     return (
       <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
-        {isLoading || newGradGroupId ? (
-          <ActivityIndicator color="#FF8700" />
-        ) : (
-          <Text style={{ color: '#aaa' }}>グループに参加していません</Text>
-        )}
+        <ActivityIndicator color="#FF8700" />
       </View>
     );
   }
 
-  // employee（general / admin）→ グループ一覧
   return (
     <View style={{ flex: 1, backgroundColor: '#fff' }}>
-      {/* グループ作成ボタン：admin のみ表示 */}
+      {/* グループ作成ボタン：admin のみ */}
       {isAdmin && (
         <View style={{ alignItems: 'flex-end', padding: s(12) }}>
           <TouchableOpacity
@@ -178,22 +160,19 @@ export default function TopScreen() {
 
               <FlatList
                 data={filteredUsers}
-                keyExtractor={(item: UserSummary) => item.id}
+                keyExtractor={(item: UserBasic) => item.id}
                 style={{ maxHeight: s(200), marginBottom: s(12) }}
-                renderItem={({ item }: { item: UserSummary }) => {
+                renderItem={({ item }: { item: UserBasic }) => {
                   const isSelected = selectedIds.includes(item.id);
-                  const isDisabled = isUserDisabled(item);
                   return (
                     <TouchableOpacity
                       onPress={() => toggleUser(item)}
-                      activeOpacity={isDisabled ? 1 : 0.7}
                       style={{
                         flexDirection: 'row',
                         alignItems: 'center',
                         paddingVertical: s(10),
                         borderBottomWidth: 1,
                         borderBottomColor: '#f0f0f0',
-                        opacity: isDisabled ? 0.4 : 1,
                       }}
                     >
                       <View
@@ -215,7 +194,6 @@ export default function TopScreen() {
                         <Text style={{ fontSize: s(14), color: '#000' }}>{item.name}</Text>
                         <Text style={{ fontSize: s(11), color: '#888' }}>
                           {item.type === 'new_graduate' ? '新卒' : '社員'}
-                          {isDisabled ? '　グループ参加済み' : ''}
                         </Text>
                       </View>
                     </TouchableOpacity>
