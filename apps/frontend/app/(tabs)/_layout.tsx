@@ -35,18 +35,18 @@ const WEB_TABS = [
   { label: 'プロフィール', segment: 'profile', route: '/(tabs)/profile' },
 ] as const;
 
+// 幅チェックのみ。フックは DesktopTabLayout に集約してモバイル時の無駄な呼び出しを回避
 function WebTabLayout() {
   const { width } = useWindowDimensions();
+  return width < 768 ? <MobileTabLayout /> : <DesktopTabLayout />;
+}
+
+function DesktopTabLayout() {
   const insets = useSafeAreaInsets();
   const router = useRouter();
   const segments = useSegments();
   const { logout } = useAuthStore();
   const currentSegment = (segments as string[])[1] ?? 'index';
-
-  // 768px 未満のスマホ幅はモバイルレイアウトを使用
-  if (width < 768) {
-    return <MobileTabLayout />;
-  }
 
   const handleLogout = () => {
     if (typeof window !== 'undefined' && window.confirm('ログアウトしますか？')) logout();

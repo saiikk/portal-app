@@ -1,1 +1,2 @@
 @AGENTS.md
+@/Users/j.lee/.claude/plugins/cache/karpathy-skills/andrej-karpathy-skills/1.0.0/skills/karpathy-guidelines/SKILL.md
