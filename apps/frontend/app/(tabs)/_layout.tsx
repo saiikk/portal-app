@@ -1,13 +1,24 @@
 import { Slot, useRouter, useSegments } from 'expo-router';
-import { useRef, useState } from 'react';
-import { Animated, Dimensions, Platform, Pressable, Text, TouchableOpacity, View } from 'react-native';
+import { useEffect, useRef, useState } from 'react';
+import {
+  Animated,
+  Dimensions,
+  Modal,
+  Platform,
+  Pressable,
+  Text,
+  TouchableOpacity,
+  View,
+  useWindowDimensions,
+} from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
+import { notificationsApi, type Notification } from '@/api/notifications';
 import TopTabBar from '@/components/TopTabBar';
 import { useAuthStore } from '@/stores/authStore';
 import { s } from '@/utils/scale';
 
-const SIDEBAR_WIDTH = Dimensions.get('window').width * 0.72;
+const SIDEBAR_WIDTH = Dimensions.get('window').width * (2 / 3);
 
 const MENU_ITEMS = [
   { label: 'お知らせ', icon: '🔔' },
@@ -25,11 +36,17 @@ const WEB_TABS = [
 ] as const;
 
 function WebTabLayout() {
+  const { width } = useWindowDimensions();
   const insets = useSafeAreaInsets();
   const router = useRouter();
   const segments = useSegments();
   const { logout } = useAuthStore();
   const currentSegment = (segments as string[])[1] ?? 'index';
+
+  // 768px 未満のスマホ幅はモバイルレイアウトを使用
+  if (width < 768) {
+    return <MobileTabLayout />;
+  }
 
   const handleLogout = () => {
     if (typeof window !== 'undefined' && window.confirm('ログアウトしますか？')) logout();
@@ -221,5 +238,47 @@ function MobileTabLayout() {
 }
 
 export default function TabLayout() {
-  return Platform.OS === 'web' ? <WebTabLayout /> : <MobileTabLayout />;
+  const { user } = useAuthStore();
+  const [kickNotif, setKickNotif] = useState<Notification | null>(null);
+
+  useEffect(() => {
+    if (!user) return;
+    notificationsApi.getUnread()
+      .then((notifs) => {
+        const kick = notifs.find((n) => n.type === 'group_kick');
+        if (kick) setKickNotif(kick);
+      })
+      .catch(() => {});
+  }, [user?.id]);
+
+  const dismissNotif = async () => {
+    if (!kickNotif) return;
+    await notificationsApi.markRead(kickNotif.id).catch(() => {});
+    setKickNotif(null);
+  };
+
+  return (
+    <View style={{ flex: 1 }}>
+      {Platform.OS === 'web' ? <WebTabLayout /> : <MobileTabLayout />}
+
+      <Modal visible={!!kickNotif} transparent animationType="fade">
+        <View style={{ flex: 1, backgroundColor: 'rgba(0,0,0,0.5)', justifyContent: 'center', alignItems: 'center' }}>
+          <View style={{ backgroundColor: '#fff', borderRadius: s(16), padding: s(24), width: '80%', alignItems: 'center' }}>
+            <Text style={{ fontSize: s(32), marginBottom: s(8) }}>🔔</Text>
+            <Text style={{ fontSize: s(16), fontWeight: '600', marginBottom: s(12) }}>お知らせ</Text>
+            <Text style={{ fontSize: s(14), color: '#555', textAlign: 'center', lineHeight: s(22), marginBottom: s(24) }}>
+              {kickNotif?.message}
+            </Text>
+            <TouchableOpacity
+              onPress={dismissNotif}
+              style={{ backgroundColor: '#FF8700', borderRadius: s(8), paddingVertical: s(12), paddingHorizontal: s(32) }}
+              activeOpacity={0.8}
+            >
+              <Text style={{ color: '#fff', fontWeight: '600', fontSize: s(14) }}>確認</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </Modal>
+    </View>
+  );
 }

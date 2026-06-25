@@ -4,13 +4,31 @@ import type { Group, User } from '@/types';
 export type GroupMember = Pick<User, 'id' | 'name' | 'icon_url' | 'type'> & { role: 'owner' | 'member' };
 
 export const groupsApi = {
+  // 自分が参加しているグループのみ返す
   getGroups: async (): Promise<Group[]> => {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) throw new Error('Not authenticated');
+
+    const { data, error } = await supabase
+      .from('group_user')
+      .select('groups(*)')
+      .eq('user_id', user.id);
+    if (error) throw error;
+
+    const groups = (data ?? []).map((row: any) => row.groups as Group).filter(Boolean);
+    return groups.sort(
+      (a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
+    );
+  },
+
+  getGroup: async (groupId: string): Promise<Group | null> => {
     const { data, error } = await supabase
       .from('groups')
       .select('*')
-      .order('created_at', { ascending: false });
-    if (error) throw error;
-    return data ?? [];
+      .eq('id', groupId)
+      .single();
+    if (error) return null;
+    return data;
   },
 
   getMembers: async (groupId: string): Promise<GroupMember[]> => {
@@ -34,11 +52,35 @@ export const groupsApi = {
     if (error) throw error;
   },
 
+  addMember: async (groupId: string, userId: string): Promise<void> => {
+    const { error } = await supabase
+      .from('group_user')
+      .insert({ group_id: groupId, user_id: userId, role: 'member' });
+    if (error) throw error;
+  },
+
+  kickMember: async (groupId: string, userId: string, groupName: string): Promise<void> => {
+    // SECURITY DEFINER RPC でオーナー確認 + RLS を迂回して削除
+    const { error: kickError } = await supabase.rpc('kick_member', {
+      p_group_id: groupId,
+      p_user_id: userId,
+    });
+    if (kickError) throw kickError;
+
+    await supabase
+      .from('notifications')
+      .insert({
+        user_id: userId,
+        type: 'group_kick',
+        message: `「${groupName}」グループから退出されました。`,
+      })
+      .then(({ error }) => { if (error) console.warn('[kickMember] notification insert failed:', error.message); });
+  },
+
   createGroup: async (name: string, memberIds: string[] = []): Promise<Group> => {
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) throw new Error('Not authenticated');
 
-    // groups.id は DB に DEFAULT がないためクライアントで生成する
     const id = 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, (c) => {
       const r = (Math.random() * 16) | 0;
       return (c === 'x' ? r : (r & 0x3) | 0x8).toString(16);

@@ -1,11 +1,14 @@
 import { supabase } from '@/lib/supabase';
-import type { Employee, NewGraduate, UserType } from '@/types';
+import type { Employee, NewGraduate, User, UserType } from '@/types';
 
-export type UserSummary = { id: string; name: string; type: UserType; has_group: boolean };
+export type UserBasic = Pick<User, 'id' | 'name' | 'type' | 'icon_url'>;
 
 export const usersApi = {
-  getAll: async (): Promise<UserSummary[]> => {
-    const { data, error } = await supabase.rpc('get_users_with_group_status');
+  getAllBasic: async (): Promise<UserBasic[]> => {
+    const { data, error } = await supabase
+      .from('users')
+      .select('id, name, type, icon_url')
+      .order('name');
     if (error) throw error;
     return data ?? [];
   },
