@@ -1,7 +1,7 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useLocalSearchParams, useRouter } from 'expo-router';
-import { useState } from 'react';
-import { Alert, FlatList, Modal, Text, TouchableOpacity, View } from 'react-native';
+import { useEffect, useState } from 'react';
+import { Alert, FlatList, Modal, Platform, Text, TouchableOpacity, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { groupsApi, type GroupMember } from '@/api/groups';
@@ -20,10 +20,23 @@ export default function ChatScreen() {
   const { user } = useAuthStore();
   const [showMembers, setShowMembers] = useState(false);
 
-  const { data: members = [] } = useQuery({
+  const { data: groupData } = useQuery({
+    queryKey: ['group', groupId],
+    queryFn: () => groupsApi.getGroup(groupId),
+  });
+
+  const { data: members = [], isSuccess: isMembersSuccess } = useQuery({
     queryKey: ['group-members', groupId],
     queryFn: () => groupsApi.getMembers(groupId),
   });
+
+  // 非メンバー（退出済み含む）はトップにリダイレクト
+  const isMember = members.some((m) => m.id === user?.id);
+  useEffect(() => {
+    if (isMembersSuccess && !isMember) {
+      router.replace('/(tabs)/');
+    }
+  }, [isMembersSuccess, isMember, router]);
 
   const { mutate: updateRole } = useMutation({
     mutationFn: ({ userId, role }: { userId: string; role: 'owner' | 'member' }) =>
@@ -33,6 +46,17 @@ export default function ChatScreen() {
     },
     onError: () => {
       Alert.alert('エラー', 'グループには最低1人のオーナーが必要です。');
+    },
+  });
+
+  const { mutate: kickMember } = useMutation({
+    mutationFn: (userId: string) =>
+      groupsApi.kickMember(groupId, userId, groupData?.name ?? 'グループ'),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['group-members', groupId] });
+    },
+    onError: () => {
+      Alert.alert('エラー', '退出処理に失敗しました。');
     },
   });
 
@@ -54,6 +78,34 @@ export default function ChatScreen() {
       [
         { text: 'キャンセル', style: 'cancel' },
         { text: '変更', onPress: () => updateRole({ userId: member.id, role: newRole }) },
+      ]
+    );
+  };
+
+  const handleKick = (member: GroupMember) => {
+    if (member.role === 'owner') {
+      const ownerCount = members.filter((m) => m.role === 'owner').length;
+      if (ownerCount <= 1) {
+        Alert.alert('退出できません', 'グループには最低1人のオーナーが必要です。');
+        return;
+      }
+    }
+
+    const doKick = () => kickMember(member.id);
+
+    if (Platform.OS === 'web') {
+      if (typeof window !== 'undefined' && window.confirm(`${member.name} をグループから退出させますか？`)) {
+        doKick();
+      }
+      return;
+    }
+
+    Alert.alert(
+      'メンバーを退出',
+      `${member.name} をグループから退出させますか？`,
+      [
+        { text: 'キャンセル', style: 'cancel' },
+        { text: '退出させる', style: 'destructive', onPress: doKick },
       ]
     );
   };
@@ -80,7 +132,9 @@ export default function ChatScreen() {
         <TouchableOpacity onPress={() => router.back()} style={{ marginRight: s(12) }}>
           <Text style={{ fontSize: s(16), color: '#FF8700' }}>{'＜ 戻る'}</Text>
         </TouchableOpacity>
-        <Text style={{ fontSize: s(16), fontWeight: '600', flex: 1 }}>チャット</Text>
+        <Text style={{ fontSize: s(16), fontWeight: '600', flex: 1 }}>
+          {groupData?.name ?? 'チャット'}
+        </Text>
 
         {/* 重なりアバター */}
         <TouchableOpacity
@@ -118,7 +172,7 @@ export default function ChatScreen() {
 
       <ChatView groupId={groupId} />
 
-      {/* メンバー一覧モーダル（中央） */}
+      {/* メンバー一覧モーダル */}
       <Modal visible={showMembers} transparent animationType="fade">
         <View style={{ flex: 1, backgroundColor: 'rgba(0,0,0,0.4)', justifyContent: 'center', alignItems: 'center' }}>
           <View style={{ backgroundColor: '#fff', borderRadius: s(16), padding: s(20), width: '85%', maxHeight: '70%' }}>
@@ -143,6 +197,8 @@ export default function ChatScreen() {
                       {item.type === 'new_graduate' ? '新卒' : '社員'}
                     </Text>
                   </View>
+
+                  {/* ロール表示 / 変更 */}
                   {isOwner ? (
                     <TouchableOpacity
                       onPress={() => handleRoleToggle(item)}
@@ -151,6 +207,7 @@ export default function ChatScreen() {
                         paddingVertical: s(4),
                         borderRadius: s(12),
                         backgroundColor: item.role === 'owner' ? '#FF8700' : '#f0f0f0',
+                        marginRight: s(6),
                       }}
                     >
                       <Text style={{ fontSize: s(11), fontWeight: '600', color: item.role === 'owner' ? '#fff' : '#666' }}>
@@ -158,9 +215,25 @@ export default function ChatScreen() {
                       </Text>
                     </TouchableOpacity>
                   ) : (
-                    <Text style={{ fontSize: s(11), color: '#888' }}>
+                    <Text style={{ fontSize: s(11), color: '#888', marginRight: s(6) }}>
                       {item.role === 'owner' ? 'オーナー' : 'メンバー'}
                     </Text>
+                  )}
+
+                  {/* 退出ボタン（オーナーのみ・自分以外） */}
+                  {isOwner && item.id !== user?.id && (
+                    <TouchableOpacity
+                      onPress={() => handleKick(item)}
+                      style={{
+                        paddingHorizontal: s(8),
+                        paddingVertical: s(4),
+                        borderRadius: s(12),
+                        borderWidth: 1,
+                        borderColor: '#ff4444',
+                      }}
+                    >
+                      <Text style={{ fontSize: s(11), color: '#ff4444', fontWeight: '600' }}>退出</Text>
+                    </TouchableOpacity>
                   )}
                 </View>
               )}
