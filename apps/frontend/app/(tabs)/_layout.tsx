@@ -32,7 +32,7 @@ function WebTabLayout() {
   const currentSegment = (segments as string[])[1] ?? 'index';
 
   const handleLogout = () => {
-    if (window.confirm('ログアウトしますか？')) logout();
+    if (typeof window !== 'undefined' && window.confirm('ログアウトしますか？')) logout();
   };
 
   return (
